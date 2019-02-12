@@ -1,6 +1,7 @@
 # coding: utf-8
 
 from __future__ import unicode_literals
+import logging
 from collections import Iterable
 from time import time
 
@@ -23,6 +24,7 @@ from .utils import (
 
 
 WRITE_COMPILERS = (SQLInsertCompiler, SQLUpdateCompiler, SQLDeleteCompiler)
+logger = logging.getLogger(__name__)
 
 
 def _unset_raw_connection(original):
@@ -38,6 +40,7 @@ def _unset_raw_connection(original):
 def _get_result_or_execute_query(execute_query_func, cache,
                                  cache_key, table_cache_keys):
     data = cache.get_many(table_cache_keys + [cache_key])
+    logger.info("keys: %s, data: %s" % (','.join(table_cache_keys + [cache_key]), str(data)))
 
     new_table_cache_keys = set(table_cache_keys)
     new_table_cache_keys.difference_update(data)
@@ -46,7 +49,10 @@ def _get_result_or_execute_query(execute_query_func, cache,
         try:
             timestamp, result = data.pop(cache_key)
             if timestamp >= max(data.values()):
+                logger.info("Cache hit: %s, timestamp: %s, max_tablecache_timestamp" % (cache_key, str(timestamp), str(max(data.values()))))
                 return result
+            else:
+                logger.info("Cache not hit: %s, timestamp: %s, max_tablecache_timestamp" % (cache_key, str(timestamp), str(max(data.values()))))
         except (KeyError, TypeError, ValueError):
             # In case `cache_key` is not in `data` or contains bad data,
             # we simply run the query and cache again the results.

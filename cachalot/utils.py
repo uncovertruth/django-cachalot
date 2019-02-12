@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 import datetime
+import logging
 from decimal import Decimal
 from hashlib import sha1
 from time import time
@@ -17,6 +18,9 @@ from django.utils.six import text_type, binary_type, integer_types
 
 from .settings import ITERABLES, cachalot_settings
 from .transaction import AtomicCache
+
+
+logger = logging.getLogger(__name__)
 
 
 class UncachableQuery(Exception):
@@ -77,7 +81,9 @@ def get_query_cache_key(compiler):
     check_parameter_types(params)
     cache_key = '%s:%s:%s' % (compiler.using, sql,
                               [text_type(p) for p in params])
-    return sha1(cache_key.encode('utf-8')).hexdigest()
+    hashed_key = sha1(cache_key.encode('utf-8')).hexdigest()
+    logger.info("query_cache_key: %s, hashed_key: %s" % (cache_key, hashed_key))
+    return hashed_key
 
 
 def get_table_cache_key(db_alias, table):
@@ -92,7 +98,9 @@ def get_table_cache_key(db_alias, table):
     :rtype: int
     """
     cache_key = '%s:%s' % (db_alias, table)
-    return sha1(cache_key.encode('utf-8')).hexdigest()
+    hashed_key = sha1(cache_key.encode('utf-8')).hexdigest()
+    logger.info("table_cache_key: %s, hashed_key: %s" % (cache_key, hashed_key))
+    return hashed_key
 
 
 def _get_tables_from_sql(connection, lowercased_sql):
